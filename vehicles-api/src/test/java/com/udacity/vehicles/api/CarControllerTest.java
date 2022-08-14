@@ -4,9 +4,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -98,12 +98,10 @@ public class CarControllerTest {
          *   the whole list of vehicles. This should utilize the car from `getCar()`
          *   below (the vehicle will be the first in the list).
          */
-        createCar();
-        MvcResult result = mvc.perform(
-                get(new URI("/cars")))
-                .andExpect(status().isOk()).andDo(print()).andReturn();
-        String listCars = result.getResponse().getContentAsString();
-        System.out.println(listCars);
+        mvc.perform(get("/cars"))
+                .andExpect(status().isOk());
+
+        verify(carService, times(1)).list();
 
     }
 
@@ -117,11 +115,39 @@ public class CarControllerTest {
          * TODO: Add a test to check that the `get` method works by calling
          *   a vehicle by ID. This should utilize the car from `getCar()` below.
          */
-        createCar();
-        MvcResult result = mvc.perform(
-                get(new URI("/cars/1"))).andExpect(status().isOk()).andDo(print()).andReturn();
-        String car = result.getResponse().getContentAsString();
-        System.out.println(car);
+        mvc.perform(get("/cars/1"))
+                .andExpect(status().isOk());
+
+        verify(carService, times(1)).findById(1L);
+    }
+
+    /**
+     * Test update car information
+     */
+    @Test
+    public void updateCar() throws Exception {
+        Car car = new Car();
+        car.setLocation(new Location(40.730610, -73.935242));
+        Details details = new Details();
+        Manufacturer manufacturer = new Manufacturer(101, "Chevrolet");
+        details.setManufacturer(manufacturer);
+        details.setModel("Impala");
+        details.setMileage(3228);
+        details.setExternalColor("Red");
+        details.setBody("sedan");
+        details.setEngine("3.6L V6");
+        details.setFuelType("Gasoline");
+        details.setModelYear(1997);
+        details.setProductionYear(1997);
+        details.setNumberOfDoors(4);
+        car.setDetails(details);
+        car.setCondition(Condition.NEW);
+
+        mvc.perform(put(new URI("/cars/1")).content(json.write(car).getJson())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk());
+
     }
 
     /**
@@ -137,6 +163,8 @@ public class CarControllerTest {
          */
         createCar();
         this.mvc.perform(delete(new URI("/cars/1")));
+
+        verify(carService, times(1)).delete(1L);
     }
 
     /**
